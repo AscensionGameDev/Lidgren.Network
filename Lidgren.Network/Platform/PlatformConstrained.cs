@@ -2,10 +2,43 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace Lidgren.Network
 {
+    internal static class ConstrainedClock
+    {
+        private const double TicksPerSecond = TimeSpan.TicksPerSecond;
+
+        public static long Ticks
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => DateTime.UtcNow.Ticks;
+		}
+
+        public static long Milliseconds
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
+		}
+
+        public static double Seconds
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => DateTime.UtcNow.Ticks / TicksPerSecond;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static long Since(long ticks) => Ticks - ticks;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static long SinceMilliseconds(long ticks) => (Ticks - ticks) / TimeSpan.TicksPerMillisecond;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static double SinceSeconds(long ticks) => (Ticks - ticks) / TicksPerSecond;
+    }
+
 	public static partial class NetUtility
 	{
 		private static byte[] s_randomMacBytes;
@@ -17,7 +50,7 @@ namespace Lidgren.Network
 		[CLSCompliant(false)]
 		public static ulong GetPlatformSeed(int seedInc)
 		{
-			ulong seed = (ulong)Environment.TickCount + (ulong)seedInc;
+			ulong seed = (ulong)ConstrainedClock.Ticks + (ulong)seedInc;
 			return seed ^ ((ulong)(new object().GetHashCode()) << 32);
 		}
 		
@@ -78,12 +111,16 @@ namespace Lidgren.Network
 
 	public static partial class NetTime
 	{
-		private static readonly long s_timeInitialized = Environment.TickCount;
-		
-		/// <summary>
-		/// Get number of seconds since the application started
-		/// </summary>
-		public static double Now { get { return (double)((uint)Environment.TickCount - s_timeInitialized) / 1000.0; } }
+		private static readonly long s_timeInitialized = ConstrainedClock.Ticks;
+
+        /// <summary>
+        /// Get number of seconds since the application started
+        /// </summary>
+        public static double Now
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => ConstrainedClock.SinceSeconds(s_timeInitialized);
+		}
 	}
 }
 #endif
