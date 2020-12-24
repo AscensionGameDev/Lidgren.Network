@@ -38,5 +38,5 @@ jobs:
     needs: build_pr
     steps:
     - uses: actions/checkout@v2
-    - name: Tests
+    - name: Tests (Pull Requests)
       run: dotnet test --verbosity normal
