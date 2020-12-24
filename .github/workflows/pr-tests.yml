@@ -3,7 +3,7 @@ name: Lidgren.Network PRs
 on: pull_request
 
 jobs:
-  build:
+  build_pr:
     runs-on: ubuntu-latest
     env:
       LIDGREN_VERSION: '1.7.4.${{ github.run_number }}'
@@ -33,9 +33,9 @@ jobs:
         path: Lidgren.Network/bin/*
         if-no-files-found: error
         retention-days: 1
-  test:
+  test_pr:
     runs-on: ubuntu-latest
-    needs: build
+    needs: build_pr
     steps:
     - name: Tests
       run: dotnet test --verbosity normal
