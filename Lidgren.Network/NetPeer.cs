@@ -14,9 +14,7 @@ namespace Lidgren.Network
 	/// </summary>
 	public partial class NetPeer
 	{
-		private static int s_initializedPeersCount;
-
-		private int m_listenPort;
+		private static in
 		private object m_tag;
 		private object m_messageReceivedEventCreationLock = new object();
 
