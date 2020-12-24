@@ -33,6 +33,8 @@ namespace Lidgren.Network.MultiTarget.Tests
                 Assert.IsTrue(f == i, "bit vector fail 4");
             }
 
+            Assert.Fail();
+
             /*
             v = new NetBitVector(9);
             v.Clear();
