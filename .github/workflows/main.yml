@@ -24,8 +24,6 @@ jobs:
     - id: build_debug
       name: Build (Debug)
       run: dotnet build --no-restore --configuration Debug -p:VersionPrefix=$LIDGREN_VERSION --version-suffix debug
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
     - id: build_release
       name: Build (Release)
       run: dotnet build --no-restore --configuration Release -p:VersionPrefix=$LIDGREN_VERSION
@@ -36,6 +34,12 @@ jobs:
         path: Lidgren.Network/bin/*/*.*nupkg
         if-no-files-found: error
         retention-days: 1
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Tests
+      run: dotnet test --verbosity normal
   publish:
     runs-on: ubuntu-latest
     needs: build
