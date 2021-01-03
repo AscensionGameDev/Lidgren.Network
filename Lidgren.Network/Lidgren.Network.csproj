@@ -6,8 +6,8 @@
     <RootNamespace>Lidgren.Network</RootNamespace>
     <VersionPrefix>1.7.3</VersionPrefix>
     <TargetFrameworks>net45;net46;net461;net462;netstandard2.0;net5.0</TargetFrameworks>
-    <PackageProjectUrl>https://github.com/AscensionGameDev/lidgren-network-gen3</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/AscensionGameDev/lidgren-network-gen3.git</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/AscensionGameDev/Lidgren.Network</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AscensionGameDev/Lidgren.Network.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Authors>Ascension Game Dev, lidgren</Authors>
     <Copyright>© lidgren 2015, Ascension Game Dev 2019-2020</Copyright>
