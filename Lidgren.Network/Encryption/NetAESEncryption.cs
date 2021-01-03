@@ -6,6 +6,12 @@ namespace Lidgren.Network
 {
 	public class NetAESEncryption : NetCryptoProviderBase
 	{
+
+		static NetAESEncryption()
+        {
+            AppContext.SetSwitch("Switch.System.Security.Cryptography.AesCryptoServiceProvider.DontCorrectlyResetDecryptor", false);
+        }
+
 		public NetAESEncryption(NetPeer peer)
 #if UNITY
 			: base(peer, new RijndaelManaged())

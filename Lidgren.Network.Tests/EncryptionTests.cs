@@ -52,6 +52,54 @@ namespace Lidgren.Network.MultiTarget.Tests
                 Assert.Fail("fail");
         }
 
+        [TestCase(typeof(NetXorEncryption), "TopSecret")]
+        [TestCase(typeof(NetXtea), "TopSecret")]
+        [TestCase(typeof(NetAESEncryption), "TopSecret")]
+        [TestCase(typeof(NetRC2Encryption), "TopSecret")]
+        [TestCase(typeof(NetDESEncryption), "TopSecret")]
+        [TestCase(typeof(NetTripleDESEncryption), "TopSecret")]
+        public void TestEncryptorReuse(Type netEncryptionType, string key)
+        {
+            var algo = Activator.CreateInstance(netEncryptionType, Peer, key) as NetEncryption;
+            for (var iteration = 0; iteration < 5; ++iteration)
+            {
+                var om = Peer.CreateMessage();
+                om.Write("Hallon");
+                om.Write(42);
+                om.Write(5, 5);
+                om.Write(true);
+                om.Write("kokos");
+                int unencLen = om.LengthBits;
+                om.Encrypt(algo);
+
+                // convert to incoming message
+                NetIncomingMessage im = CreateIncomingMessage(om.PeekDataBuffer(), om.LengthBits);
+                if (im.Data == null || im.Data.Length == 0)
+                    Assert.Fail("bad im!");
+
+                im.Decrypt(algo);
+
+                if (im.Data == null || im.Data.Length == 0 || im.LengthBits != unencLen)
+                    Assert.Fail("Length fail");
+
+                var str = im.ReadString();
+                if (str != "Hallon")
+                    Assert.Fail("fail");
+
+                if (im.ReadInt32() != 42)
+                    Assert.Fail("fail");
+
+                if (im.ReadInt32(5) != 5)
+                    Assert.Fail("fail");
+
+                if (im.ReadBoolean() != true)
+                    Assert.Fail("fail");
+
+                if (im.ReadString() != "kokos")
+                    Assert.Fail("fail");
+            }
+        }
+
         [Test]
         [Repeat(100)]
         public void TestNetSRP()

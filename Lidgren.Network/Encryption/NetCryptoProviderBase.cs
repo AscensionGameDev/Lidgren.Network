@@ -1,12 +1,41 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Security.Cryptography;
 
 namespace Lidgren.Network
 {
 	public abstract class NetCryptoProviderBase : NetEncryption
 	{
-		protected SymmetricAlgorithm m_algorithm;
+		protected readonly SymmetricAlgorithm m_algorithm;
+		private ICryptoTransform m_encryptor;
+		private ICryptoTransform m_decryptor;
+
+		protected virtual ICryptoTransform Encryptor
+		{
+			get
+			{
+				if (!(m_encryptor?.CanReuseTransform ?? false))
+				{
+					m_encryptor?.Dispose();
+					m_encryptor = m_algorithm.CreateEncryptor();
+				}
+
+				return m_encryptor;
+			}
+		}
+
+		protected virtual ICryptoTransform Decryptor
+		{
+			get
+			{
+				if (!(m_decryptor?.CanReuseTransform ?? false))
+				{
+					m_decryptor?.Dispose();
+					m_decryptor = m_algorithm.CreateDecryptor();
+				}
+
+				return m_decryptor;
+			}
+		}
 
 		public NetCryptoProviderBase(NetPeer peer, SymmetricAlgorithm algo)
 			: base(peer)
@@ -36,7 +65,7 @@ namespace Lidgren.Network
 			int unEncLenBits = msg.LengthBits;
 
 			var ms = new MemoryStream();
-			var cs = new CryptoStream(ms, m_algorithm.CreateEncryptor(), CryptoStreamMode.Write);
+			var cs = new CryptoStream(ms, Encryptor, CryptoStreamMode.Write);
 			cs.Write(msg.m_data, 0, msg.LengthBytes);
 			cs.Close();
 
@@ -58,7 +87,7 @@ namespace Lidgren.Network
 			int unEncLenBits = (int)msg.ReadUInt32();
 
 			var ms = new MemoryStream(msg.m_data, 4, msg.LengthBytes - 4);
-			var cs = new CryptoStream(ms, m_algorithm.CreateDecryptor(), CryptoStreamMode.Read);
+			var cs = new CryptoStream(ms, Decryptor, CryptoStreamMode.Read);
 
 			var byteLen = NetUtility.BytesToHoldBits(unEncLenBits);
 			var result = m_peer.GetStorage(byteLen);
