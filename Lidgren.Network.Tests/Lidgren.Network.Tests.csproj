@@ -6,6 +6,10 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net5.0'">
+    <DefineConstants>$(DefineConstants);AES_GCM</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
