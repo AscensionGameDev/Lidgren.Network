@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Reflection;
 
-namespace Lidgren.Network.MultiTarget.Tests
+namespace Lidgren.Network.Tests
 {
     public static class TestHelper
     {

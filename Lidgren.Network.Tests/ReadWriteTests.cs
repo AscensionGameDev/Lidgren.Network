@@ -4,9 +4,9 @@ using NUnit.Framework.Internal;
 using System.Reflection;
 using System.Text;
 
-using static Lidgren.Network.MultiTarget.Tests.TestHelper;
+using static Lidgren.Network.Tests.TestHelper;
 
-namespace Lidgren.Network.MultiTarget.Tests
+namespace Lidgren.Network.Tests
 {
     [TestFixture]
     public class ReadWriteTests : PeerTestFixture

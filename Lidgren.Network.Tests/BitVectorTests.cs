@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-namespace Lidgren.Network.MultiTarget.Tests
+namespace Lidgren.Network.Tests
 {
     [TestFixture]
     public class BitVectorTests
