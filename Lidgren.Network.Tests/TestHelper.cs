@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Linq;
 using System.Reflection;
 
 namespace Lidgren.Network.Tests
@@ -19,5 +20,16 @@ namespace Lidgren.Network.Tests
 
             return inc;
         }
+
+        public static NetIncomingMessage ToIncomingMessage(
+            this NetOutgoingMessage outgoingMessage,
+            NetIncomingMessageType incomingMessageType = NetIncomingMessageType.UnconnectedData
+        ) =>
+            new NetIncomingMessage
+            {
+                m_incomingMessageType = incomingMessageType,
+                m_data = outgoingMessage.m_data.ToArray(),
+                m_bitLength = outgoingMessage.m_bitLength
+            };
     }
 }
