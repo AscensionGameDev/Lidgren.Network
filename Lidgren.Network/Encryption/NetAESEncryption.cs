@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Security.Cryptography;
 
 namespace Lidgren.Network
@@ -9,34 +8,32 @@ namespace Lidgren.Network
 
 		static NetAESEncryption()
         {
-            AppContext.SetSwitch("Switch.System.Security.Cryptography.AesCryptoServiceProvider.DontCorrectlyResetDecryptor", false);
-        }
+#if !UNITY && NET46
+			AppContext.SetSwitch("Switch.System.Security.Cryptography.AesCryptoServiceProvider.DontCorrectlyResetDecryptor", false);
+#endif
+		}
 
 		public NetAESEncryption(NetPeer peer)
 #if UNITY
 			: base(peer, new RijndaelManaged())
 #else
-			: base(peer, new AesCryptoServiceProvider())
+			: base(peer, new AesCryptoServiceProvider
+			{
+				Mode = CipherMode.CBC,
+				Padding = PaddingMode.PKCS7
+			})
 #endif
 		{
 		}
 
 		public NetAESEncryption(NetPeer peer, string key)
-#if UNITY
-			: base(peer, new RijndaelManaged())
-#else
-			: base(peer, new AesCryptoServiceProvider())
-#endif
+			: this(peer)
 		{
 			SetKey(key);
 		}
 
 		public NetAESEncryption(NetPeer peer, byte[] data, int offset, int count)
-#if UNITY
-			: base(peer, new RijndaelManaged())
-#else
-			: base(peer, new AesCryptoServiceProvider())
-#endif
+			: this(peer)
 		{
 			SetKey(data, offset, count);
 		}

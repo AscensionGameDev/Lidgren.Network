@@ -1,46 +1,82 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Concurrent;
+#if DEBUG
+using System.Diagnostics;
+#endif
+using System.IO;
 using System.Security.Cryptography;
 
 namespace Lidgren.Network
 {
-	public abstract class NetCryptoProviderBase : NetEncryption
+    public abstract class NetCryptoProviderBase : NetEncryption
 	{
+		protected sealed class ICryptoTransformProvider
+        {
+			public delegate ICryptoTransform CreateTransform();
+
+			private readonly NetCryptoProviderBase m_cryptoProvider;
+			private readonly CreateTransform m_createTransform;
+			private readonly ConcurrentStack<ICryptoTransform> m_transforms;
+
+			public ICryptoTransformProvider(
+				NetCryptoProviderBase cryptoProvider,
+				CreateTransform createTransform
+			)
+            {
+				m_cryptoProvider = cryptoProvider;
+				m_createTransform = createTransform;
+				m_transforms = new ConcurrentStack<ICryptoTransform>();
+            }
+
+			public bool Pop(out ICryptoTransform cryptoTransform)
+            {
+				if (m_cryptoProvider.ForceNewTransform || !m_transforms.TryPop(out cryptoTransform))
+                {
+					cryptoTransform = m_createTransform();
+				}
+
+				return true;
+            }
+
+			public void Push(ICryptoTransform cryptoTransform)
+            {
+				if (default == cryptoTransform)
+                {
+					throw new ArgumentNullException(nameof(cryptoTransform));
+                }
+
+				if (!m_cryptoProvider.ForceNewTransform && cryptoTransform.CanReuseTransform)
+                {
+					m_transforms.Push(cryptoTransform);
+				} else
+                {
+					cryptoTransform.Dispose();
+                }
+			}
+        }
+
 		protected readonly SymmetricAlgorithm m_algorithm;
-		private ICryptoTransform m_encryptor;
-		private ICryptoTransform m_decryptor;
+		protected readonly ICryptoTransformProvider m_encryptorProvider;
+		protected readonly ICryptoTransformProvider m_decryptorProvider;
 
-		protected virtual ICryptoTransform Encryptor
-		{
-			get
-			{
-				if (!(m_encryptor?.CanReuseTransform ?? false))
-				{
-					m_encryptor?.Dispose();
-					m_encryptor = m_algorithm.CreateEncryptor();
-				}
+		public bool ForceNewTransform { get; set; }
 
-				return m_encryptor;
-			}
-		}
+#if DEBUG
+		internal byte[] Key => m_algorithm.Key;
 
-		protected virtual ICryptoTransform Decryptor
-		{
-			get
-			{
-				if (!(m_decryptor?.CanReuseTransform ?? false))
-				{
-					m_decryptor?.Dispose();
-					m_decryptor = m_algorithm.CreateDecryptor();
-				}
+		internal byte[] IV => m_algorithm.IV;
 
-				return m_decryptor;
-			}
-		}
+		internal int KeySize => m_algorithm.KeySize;
+
+		internal int BlockSize => m_algorithm.BlockSize;
+#endif
 
 		public NetCryptoProviderBase(NetPeer peer, SymmetricAlgorithm algo)
 			: base(peer)
 		{
 			m_algorithm = algo;
+			m_encryptorProvider = new ICryptoTransformProvider(this, m_algorithm.CreateEncryptor);
+			m_decryptorProvider = new ICryptoTransformProvider(this, m_algorithm.CreateDecryptor);
 			m_algorithm.GenerateKey();
 			m_algorithm.GenerateIV();
 		}
@@ -62,45 +98,84 @@ namespace Lidgren.Network
 
 		public override bool Encrypt(NetOutgoingMessage msg)
 		{
-			int unEncLenBits = msg.LengthBits;
+			try
+			{
+				var plaintextBits = msg.LengthBits;
+				var blocks = (int)Math.Ceiling(plaintextBits / (double)m_algorithm.BlockSize);
+				var paddedLengthBytes = sizeof(int) + blocks * m_algorithm.BlockSize / 8;
+				var memoryStream = new MemoryStream(paddedLengthBytes);
+				memoryStream.Write(BitConverter.GetBytes(plaintextBits), 0, sizeof(int));
 
-			var ms = new MemoryStream();
-			var cs = new CryptoStream(ms, Encryptor, CryptoStreamMode.Write);
-			cs.Write(msg.m_data, 0, msg.LengthBytes);
-			cs.Close();
+				if (!m_encryptorProvider.Pop(out var cryptoTransform))
+				{
+					return false;
+				}
 
-			// get results
-			var arr = ms.ToArray();
-			ms.Close();
+				var cs = new CryptoStream(memoryStream, cryptoTransform, CryptoStreamMode.Write);
+				cs.Write(msg.m_data, 0, msg.LengthBytes);
+				cs.Close();
 
-			msg.EnsureBufferSize((arr.Length + 4) * 8);
-			msg.LengthBits = 0; // reset write pointer
-			msg.Write((uint)unEncLenBits);
-			msg.Write(arr);
-			msg.LengthBits = (arr.Length + 4) * 8;
+				// Recycle existing data buffer
+				m_peer.Recycle(msg.m_data);
 
-			return true;
+				// get results
+				msg.m_bitLength = paddedLengthBytes << 3;
+				msg.m_readPosition = msg.m_bitLength;
+				msg.m_data = memoryStream.GetBuffer();
+				memoryStream.Close();
+
+				return true;
+			}
+			catch
+			{
+#if DEBUG
+				Debugger.Break();
+#endif
+				throw;
+			}
 		}
 
 		public override bool Decrypt(NetIncomingMessage msg)
 		{
-			int unEncLenBits = (int)msg.ReadUInt32();
+			try
+			{
+				var memoryStream = new MemoryStream(msg.m_data);
+				var plaintextBitsBuffer = new byte[sizeof(int)];
+				if (sizeof(int) != memoryStream.Read(plaintextBitsBuffer, 0, sizeof(int)))
+                {
+					throw new Exception();
+                }
 
-			var ms = new MemoryStream(msg.m_data, 4, msg.LengthBytes - 4);
-			var cs = new CryptoStream(ms, Decryptor, CryptoStreamMode.Read);
+				var plaintextBits = BitConverter.ToInt32(plaintextBitsBuffer, 0);
 
-			var byteLen = NetUtility.BytesToHoldBits(unEncLenBits);
-			var result = m_peer.GetStorage(byteLen);
-			cs.Read(result, 0, byteLen);
-			cs.Close();
+				if (!m_decryptorProvider.Pop(out var cryptoTransform))
+				{
+					return false;
+				}
 
-			// TODO: recycle existing msg
+				var cs = new CryptoStream(memoryStream, cryptoTransform, CryptoStreamMode.Read);
 
-			msg.m_data = result;
-			msg.m_bitLength = unEncLenBits;
-			msg.m_readPosition = 0;
+				var byteLen = NetUtility.BytesToHoldBits(plaintextBits);
+				var result = m_peer.GetStorage(byteLen << 3);
+				var bytesRead = cs.Read(result, 0, byteLen);
 
-			return true;
+				cs.Close();
+
+				// Recycle existing data buffer
+				m_peer.Recycle(msg.m_data);
+
+				msg.m_data = result;
+				msg.m_bitLength = plaintextBits;
+				msg.m_readPosition = 0;
+
+				return true;
+			} catch
+			{
+#if DEBUG
+				Debugger.Break();
+#endif
+				throw;
+			}
 		}
 	}
 }
