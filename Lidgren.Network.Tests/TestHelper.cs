@@ -1,4 +1,7 @@
-﻿using System;
+﻿using NUnit.Framework;
+
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -31,5 +34,64 @@ namespace Lidgren.Network.Tests
                 m_data = outgoingMessage.m_data.ToArray(),
                 m_bitLength = outgoingMessage.m_bitLength
             };
+
+        public static void WaitForConnection(NetConnection connection, int failureTimeout = 10000)
+        {
+            var interval = Math.Max(1, failureTimeout / 100);
+            var currentTime = 0;
+            while (currentTime < failureTimeout)
+            {
+                switch (connection.Status)
+                {
+                    case NetConnectionStatus.None:
+                    case NetConnectionStatus.InitiatedConnect:
+                        NetUtility.Sleep(interval);
+                        currentTime += interval;
+                        break;
+
+                    case NetConnectionStatus.Connected:
+                        return;
+
+                    default:
+                        Assert.Fail($"Connection failed, current status: {connection.Status}");
+                        break;
+                }
+            }
+
+            Assert.Fail($"Connection not established within {failureTimeout}ms, current status: {connection.Status}");
+        }
+
+        public static void WaitFor(Func<bool> condition, int failureTimeout = 10000)
+        {
+            var interval = Math.Max(1, failureTimeout / 100);
+            var currentTime = 0;
+            while (currentTime < failureTimeout)
+            {
+                if (condition())
+                {
+                    return;
+                }
+
+                NetUtility.Sleep(interval);
+                currentTime += interval;
+            }
+
+            Assert.Fail($"Condition not met within {failureTimeout}ms");
+        }
+
+        public static void HasMessage(
+            IList<NetIncomingMessage> messages,
+            NetIncomingMessageType messageType,
+            Func<NetIncomingMessage, bool> filter = default
+        )
+        {
+            var hasMessage = messages.Any(
+                message =>
+                    message.MessageType == messageType &&
+                    (filter == default || filter(message))
+            );
+
+            Assert.IsTrue(hasMessage);
+        }
     }
 }

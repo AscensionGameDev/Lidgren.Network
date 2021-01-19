@@ -48,17 +48,16 @@ namespace Lidgren.Network
 			{
 				object value;
 
-				// find read method
-				MethodInfo readMethod;
-				if (s_readMethods.TryGetValue(fi.FieldType, out readMethod))
-				{
-					// read value
-					value = readMethod.Invoke(this, null);
+                // find read method
+                if (s_readMethods.TryGetValue(fi.FieldType, out var readMethod))
+                {
+                    // read value
+                    value = readMethod.Invoke(this, null);
 
-					// set the value
-					fi.SetValue(target, value);
-				}
-			}
+                    // set the value
+                    fi.SetValue(target, value);
+                }
+            }
 		}
 
 		/// <summary>
@@ -85,19 +84,18 @@ namespace Lidgren.Network
 			{
 				object value;
 
-				// find read method
-				MethodInfo readMethod;
-				if (s_readMethods.TryGetValue(fi.PropertyType, out readMethod))
-				{
-					// read value
-					value = readMethod.Invoke(this, null);
+                // find read method
+                if (s_readMethods.TryGetValue(fi.PropertyType, out var readMethod))
+                {
+                    // read value
+                    value = readMethod.Invoke(this, null);
 
-					// set the value
-					var setMethod = fi.GetSetMethod();
-					if (setMethod != null)
-						setMethod.Invoke(target, new object[] { value });
-				}
-			}
+                    // set the value
+                    var setMethod = fi.GetSetMethod();
+                    if (setMethod != null)
+                        setMethod.Invoke(target, new object[] { value });
+                }
+            }
 		}
 	}
 }

@@ -26,9 +26,9 @@ namespace Lidgren.Network
 		public bool ReadBoolean()
 		{
 			NetException.Assert(m_bitLength - m_readPosition >= 1, c_readOverflowError);
-			byte retval = NetBitWriter.ReadByte(m_data, 1, m_readPosition);
+			var retval = NetBitWriter.ReadByte(m_data, 1, m_readPosition);
 			m_readPosition += 1;
-			return (retval > 0 ? true : false);
+			return retval > 0;
 		}
 		
 		/// <summary>
@@ -444,13 +444,12 @@ namespace Lidgren.Network
 			int num2 = 0;
 			while (m_bitLength - m_readPosition >= 8)
 			{
-				byte num3;
-				if (ReadByte(out num3) == false)
-				{
-					result = 0;
-					return false;
-				}
-				num1 |= (num3 & 0x7f) << num2;
+                if (ReadByte(out var num3) == false)
+                {
+                    result = 0;
+                    return false;
+                }
+                num1 |= (num3 & 0x7f) << num2;
 				num2 += 7;
 				if ((num3 & 0x80) == 0)
 				{
@@ -621,14 +620,13 @@ namespace Lidgren.Network
 		/// </summary>
 		public bool ReadString(out string result)
 		{
-			uint byteLen;
-			if (ReadVariableUInt32(out byteLen) == false)
-			{
-				result = String.Empty;
-				return false;
-			}
+            if (ReadVariableUInt32(out var byteLen) == false)
+            {
+                result = String.Empty;
+                return false;
+            }
 
-			if (byteLen <= 0)
+            if (byteLen <= 0)
 			{
 				result = String.Empty;
 				return true;
@@ -648,14 +646,13 @@ namespace Lidgren.Network
 				return true;
 			}
 
-			byte[] bytes;
-			if (ReadBytes((int)byteLen, out bytes) == false)
-			{
-				result = String.Empty;
-				return false;
-			}
+            if (ReadBytes((int)byteLen, out var bytes) == false)
+            {
+                result = String.Empty;
+                return false;
+            }
 
-			result = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+            result = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
 			return true;
 		}
 

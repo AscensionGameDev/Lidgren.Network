@@ -86,11 +86,13 @@ namespace Lidgren.Network
 			{
 				delay = m_configuration.m_minimumOneWayLatency + (MWCRandom.Instance.NextSingle() * m_configuration.m_randomOneWayLatency);
 
-				// Enqueue delayed packet
-				DelayedPacket p = new DelayedPacket();
-				p.Target = target;
-				p.Data = new byte[numBytes];
-				Buffer.BlockCopy(m_sendBuffer, 0, p.Data, 0, numBytes);
+                // Enqueue delayed packet
+                DelayedPacket p = new DelayedPacket
+                {
+                    Target = target,
+                    Data = new byte[numBytes]
+                };
+                Buffer.BlockCopy(m_sendBuffer, 0, p.Data, 0, numBytes);
 				p.DelayedUntil = NetTime.Now + delay;
 
 				m_delayedPackets.Add(p);
@@ -101,33 +103,28 @@ namespace Lidgren.Network
 
 		private void SendDelayedPackets()
 		{
-			if (m_delayedPackets.Count <= 0)
-				return;
-
-			double now = NetTime.Now;
-
-			bool connectionReset;
-
-		RestartDelaySending:
-			foreach (DelayedPacket p in m_delayedPackets)
-			{
-				if (now > p.DelayedUntil)
+			while (m_delayedPackets.Count > 0)
+            {
+				var now = NetTime.Now;
+				foreach (DelayedPacket p in m_delayedPackets)
 				{
-					ActuallySendPacket(p.Data, p.Data.Length, p.Target, out connectionReset);
-					m_delayedPackets.Remove(p);
-					goto RestartDelaySending;
+					if (now > p.DelayedUntil)
+					{
+						_ = ActuallySendPacket(p.Data, p.Data.Length, p.Target, out _);
+						m_delayedPackets.Remove(p);
+						break;
+					}
 				}
 			}
-		}
+        }
 
 		private void FlushDelayedPackets()
 		{
 			try
 			{
-				bool connectionReset;
-				foreach (DelayedPacket p in m_delayedPackets)
-					ActuallySendPacket(p.Data, p.Data.Length, p.Target, out connectionReset);
-				m_delayedPackets.Clear();
+                foreach (DelayedPacket p in m_delayedPackets)
+                    ActuallySendPacket(p.Data, p.Data.Length, p.Target, out var connectionReset);
+                m_delayedPackets.Clear();
 			}
 			catch { }
 		}
@@ -138,7 +135,7 @@ namespace Lidgren.Network
 		internal bool ActuallySendPacket(byte[] data, int numBytes, NetEndPoint target, out bool connectionReset)
 		{
 			connectionReset = false;
-			IPAddress ba = default(IPAddress);
+			IPAddress ba = default;
 			try
 			{
 				ba = NetUtility.GetCachedBroadcastAddress();
@@ -154,7 +151,10 @@ namespace Lidgren.Network
                     m_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
                 }
                 else if(m_configuration.DualStack && m_configuration.LocalAddress.AddressFamily == AddressFamily.InterNetworkV6)
-                    NetUtility.CopyEndpoint(target, targetCopy); //Maps to IPv6 for Dual Mode
+                {
+					// Maps to IPv6 for Dual Mode
+					NetUtility.CopyEndpoint(target, targetCopy);
+				}
                 else
                 {
 	                targetCopy.Port = target.Port;
@@ -163,7 +163,9 @@ namespace Lidgren.Network
 
                 int bytesSent = m_socket.SendTo(data, 0, numBytes, SocketFlags.None, targetCopy);
 				if (numBytes != bytesSent)
+                {
 					LogWarning("Failed to send the full " + numBytes + "; only " + bytesSent + " bytes sent in packet!");
+				}
 
 				// LogDebug("Sent " + numBytes + " bytes");
 			}
@@ -190,7 +192,9 @@ namespace Lidgren.Network
 			finally
 			{
 				if (target.Address.Equals(ba))
+                {
 					m_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, false);
+				}
 			}
 			return true;
 		}

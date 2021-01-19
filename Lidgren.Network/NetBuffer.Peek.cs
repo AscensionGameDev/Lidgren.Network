@@ -39,8 +39,8 @@ namespace Lidgren.Network
 		public bool PeekBoolean()
 		{
 			NetException.Assert(m_bitLength - m_readPosition >= 1, c_readOverflowError);
-			byte retval = NetBitWriter.ReadByte(m_data, 1, m_readPosition);
-			return (retval > 0 ? true : false);
+			var retval = NetBitWriter.ReadByte(m_data, 1, m_readPosition);
+			return retval > 0;
 		}
 
 		//

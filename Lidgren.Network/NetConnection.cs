@@ -113,13 +113,11 @@ namespace Lidgren.Network
 			m_timeoutDeadline = now + m_peerConfiguration.m_connectionTimeout;
 		}
 
-		internal void SetStatus(NetConnectionStatus status, string reason)
+		internal void SetStatus(NetConnectionStatus status, NetReason reason)
 		{
 			// user or library thread
 
 			m_status = status;
-			if (reason == null)
-				reason = string.Empty;
 
 			if (m_status == NetConnectionStatus.Connected)
 			{
@@ -131,11 +129,20 @@ namespace Lidgren.Network
 			{
 				if (m_outputtedStatus != status)
 				{
-					NetIncomingMessage info = m_peer.CreateIncomingMessage(NetIncomingMessageType.StatusChanged, 4 + reason.Length + (reason.Length > 126 ? 2 : 1));
+					var outgoingMessage = reason.Message;
+					var info = m_peer.CreateIncomingMessage(NetIncomingMessageType.StatusChanged, 1 + reason.Length);
+					info.Write((byte)m_status);
+					if (outgoingMessage != null)
+                    {
+						Buffer.BlockCopy(outgoingMessage.m_data, 0, info.m_data, 1, outgoingMessage.LengthBytes);
+						info.m_bitLength = outgoingMessage.m_bitLength;
+                    } else
+                    {
+						info.Write(reason.Text);
+					}
+
 					info.m_senderConnection = this;
 					info.m_senderEndPoint = m_remoteEndPoint;
-					info.Write((byte)m_status);
-					info.Write(reason);
 					m_peer.ReleaseMessage(info);
 					m_outputtedStatus = status;
 				}
@@ -218,12 +225,11 @@ namespace Lidgren.Network
 					// write acks
 					for (int i = 0; i < acks; i++)
 					{
-						NetTuple<NetMessageType, int> tuple;
-						m_queuedOutgoingAcks.TryDequeue(out tuple);
+                        m_queuedOutgoingAcks.TryDequeue(out var tuple);
 
-						//m_peer.LogVerbose("Sending ack for " + tuple.Item1 + "#" + tuple.Item2);
+                        //m_peer.LogVerbose("Sending ack for " + tuple.Item1 + "#" + tuple.Item2);
 
-						sendBuffer[m_sendBufferWritePtr++] = (byte)tuple.Item1;
+                        sendBuffer[m_sendBufferWritePtr++] = (byte)tuple.Item1;
 						sendBuffer[m_sendBufferWritePtr++] = (byte)tuple.Item2;
 						sendBuffer[m_sendBufferWritePtr++] = (byte)(tuple.Item2 >> 8);
 					}
@@ -239,22 +245,21 @@ namespace Lidgren.Network
 					}
 				}
 
-				//
-				// Parse incoming acks (may trigger resends)
-				//
-				NetTuple<NetMessageType, int> incAck;
-				while (m_queuedIncomingAcks.TryDequeue(out incAck))
-				{
-					//m_peer.LogVerbose("Received ack for " + acktp + "#" + seqNr);
-					NetSenderChannelBase chan = m_sendChannels[(int)incAck.Item1 - 1];
+                //
+                // Parse incoming acks (may trigger resends)
+                //
+                while (m_queuedIncomingAcks.TryDequeue(out var incAck))
+                {
+                    //m_peer.LogVerbose("Received ack for " + acktp + "#" + seqNr);
+                    NetSenderChannelBase chan = m_sendChannels[(int)incAck.Item1 - 1];
 
-					// If we haven't sent a message on this channel there is no reason to ack it
-					if (chan == null)
-						continue;
+                    // If we haven't sent a message on this channel there is no reason to ack it
+                    if (chan == null)
+                        continue;
 
-					chan.ReceiveAcknowledge(now, incAck.Item2);
-				}
-			}
+                    chan.ReceiveAcknowledge(now, incAck.Item2);
+                }
+            }
 
 			//
 			// send queued messages
@@ -568,10 +573,8 @@ namespace Lidgren.Network
 			return chan.GetFreeWindowSlots() > 0;
 		}
 
-		internal void Shutdown(string reason)
-		{
+		internal void Shutdown(NetReason reason) =>
 			ExecuteDisconnect(reason, true);
-		}
 
 		/// <summary>
 		/// Returns a string that represents this object

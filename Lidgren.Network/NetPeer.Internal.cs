@@ -2,7 +2,6 @@
 using System.Net;
 using System.Threading;
 using System.Diagnostics;
-using System.Security.Cryptography;
 using System.Net.Sockets;
 using System.Collections.Generic;
 
@@ -12,11 +11,18 @@ using NetEndPoint = System.Net.IPEndPoint;
 
 namespace Lidgren.Network
 {
+    internal delegate INetSocket CreateSocket(AddressFamily addressFamily);
+
 	public partial class NetPeer
 	{
+		internal static CreateSocket CreateSocket = CreateNetSocket;
+
+		internal static INetSocket CreateNetSocket(AddressFamily addressFamily) =>
+			new NetSocket(addressFamily);
+
 		private NetPeerStatus m_status;
 		private Thread m_networkThread;
-		private Socket m_socket;
+		private INetSocket m_socket;
 		internal byte[] m_sendBuffer;
 		internal byte[] m_receiveBuffer;
 		internal NetIncomingMessage m_readHelperMessage;
@@ -41,15 +47,15 @@ namespace Lidgren.Network
 		private AutoResetEvent m_messageReceivedEvent;
 		private List<NetTuple<SynchronizationContext, SendOrPostCallback>> m_receiveCallbacks;
 
-		/// <summary>
-		/// Gets the socket, if Start() has been called
-		/// </summary>
-		public Socket Socket { get { return m_socket; } }
+        /// <summary>
+        /// Gets the socket, if Start() has been called
+        /// </summary>
+        public INetSocket Socket => m_socket;
 
-		/// <summary>
-		/// Call this to register a callback for when a new message arrives
-		/// </summary>
-		public void RegisterReceivedCallback(SendOrPostCallback callback, SynchronizationContext syncContext = null)
+        /// <summary>
+        /// Call this to register a callback for when a new message arrives
+        /// </summary>
+        public void RegisterReceivedCallback(SendOrPostCallback callback, SynchronizationContext syncContext = null)
 		{
 			if (syncContext == null)
 				syncContext = SynchronizationContext.Current;
@@ -123,10 +129,14 @@ namespace Lidgren.Network
 					mutex.WaitOne();
 
 					if (m_socket == null)
-						m_socket = new Socket(m_configuration.LocalAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+                    {
+						m_socket = new NetSocket(m_configuration.LocalAddress.AddressFamily);
+					}
 
 					if (reBind)
-						m_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, (int)1);
+                    {
+						m_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
+					}
 
 					m_socket.ReceiveBufferSize = m_configuration.ReceiveBufferSize;
 					m_socket.SendBufferSize = m_configuration.SendBufferSize;
@@ -170,7 +180,9 @@ namespace Lidgren.Network
 			m_listenPort = boundEp.Port;
 		}
 
-		private void InitializeNetwork()
+        private void LogDebug(object p) => throw new NotImplementedException();
+
+        private void InitializeNetwork()
 		{
 			lock (m_initializeLock)
 			{
@@ -389,22 +401,20 @@ namespace Lidgren.Network
 				}
 				m_executeFlushSendQueue = false;
 
-				// send unsent unconnected messages
-				NetTuple<NetEndPoint, NetOutgoingMessage> unsent;
-				while (m_unsentUnconnectedMessages.TryDequeue(out unsent))
-				{
-					NetOutgoingMessage om = unsent.Item2;
+                // send unsent unconnected messages
+                while (m_unsentUnconnectedMessages.TryDequeue(out var unsent))
+                {
+                    NetOutgoingMessage om = unsent.Item2;
 
-					int len = om.Encode(m_sendBuffer, 0, 0);
+                    int len = om.Encode(m_sendBuffer, 0, 0);
 
-					Interlocked.Decrement(ref om.m_recyclingCount);
-					if (om.m_recyclingCount <= 0)
-						Recycle(om);
+                    Interlocked.Decrement(ref om.m_recyclingCount);
+                    if (om.m_recyclingCount <= 0)
+                        Recycle(om);
 
-					bool connReset;
-					SendPacket(len, unsent.Item1, 1, out connReset);
-				}
-			}
+                    SendPacket(len, unsent.Item1, 1, out var connReset);
+                }
+            }
 
             if (m_upnp != null)
                 m_upnp.CheckForDiscoveryTimeout();
@@ -488,13 +498,12 @@ namespace Lidgren.Network
 				}
 			}
 
-			NetConnection sender = null;
-			m_connectionLookup.TryGetValue(ipsender, out sender);
+            m_connectionLookup.TryGetValue(ipsender, out var sender);
 
-			//
-			// parse packet into messages
-			//
-			int numMessages = 0;
+            //
+            // parse packet into messages
+            //
+            int numMessages = 0;
 			int numFragments = 0;
 			int ptr = 0;
 			while ((bytesReceived - ptr) >= NetConstants.HeaderByteSize)
@@ -630,17 +639,16 @@ namespace Lidgren.Network
 
 		private void ReceivedUnconnectedLibraryMessage(double now, NetEndPoint senderEndPoint, NetMessageType tp, int ptr, int payloadByteLength)
 		{
-			NetConnection shake;
-			if (m_handshakes.TryGetValue(senderEndPoint, out shake))
-			{
-				shake.ReceivedHandshake(now, tp, ptr, payloadByteLength);
-				return;
-			}
+            if (m_handshakes.TryGetValue(senderEndPoint, out var shake))
+            {
+                shake.ReceivedHandshake(now, tp, ptr, payloadByteLength);
+                return;
+            }
 
-			//
-			// Library message from a completely unknown sender; lets just accept Connect
-			//
-			switch (tp)
+            //
+            // Library message from a completely unknown sender; lets just accept Connect
+            //
+            switch (tp)
 			{
 				case NetMessageType.Discovery:
 					HandleIncomingDiscoveryRequest(now, senderEndPoint, ptr, payloadByteLength);

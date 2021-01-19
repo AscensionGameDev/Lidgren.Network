@@ -95,19 +95,18 @@ namespace Lidgren.Network
 
 			ipOrHost = ipOrHost.Trim();
 
-			NetAddress ipAddress = null;
-			if (NetAddress.TryParse(ipOrHost, out ipAddress))
-			{
-				if (ipAddress.AddressFamily == AddressFamily.InterNetwork || ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
-				{
-					callback(ipAddress);
-					return;
-				}
-				throw new ArgumentException("This method will not currently resolve other than ipv4 addresses");
-			}
+            if (NetAddress.TryParse(ipOrHost, out var ipAddress))
+            {
+                if (ipAddress.AddressFamily == AddressFamily.InterNetwork || ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
+                {
+                    callback(ipAddress);
+                    return;
+                }
+                throw new ArgumentException("This method will not currently resolve other than ipv4 addresses");
+            }
 
-			// ok must be a host name
-			IPHostEntry entry;
+            // ok must be a host name
+            IPHostEntry entry;
 			try
 			{
 				Dns.BeginGetHostEntry(ipOrHost, delegate(IAsyncResult result)
@@ -173,16 +172,15 @@ namespace Lidgren.Network
 
 			ipOrHost = ipOrHost.Trim();
 
-			NetAddress ipAddress = null;
-			if (NetAddress.TryParse(ipOrHost, out ipAddress))
-			{
-				if (ipAddress.AddressFamily == AddressFamily.InterNetwork || ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
-					return ipAddress;
-				throw new ArgumentException("This method will not currently resolve other than IPv4 or IPv6 addresses");
-			}
+            if (NetAddress.TryParse(ipOrHost, out var ipAddress))
+            {
+                if (ipAddress.AddressFamily == AddressFamily.InterNetwork || ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
+                    return ipAddress;
+                throw new ArgumentException("This method will not currently resolve other than IPv4 or IPv6 addresses");
+            }
 
-			// ok must be a host name
-			try
+            // ok must be a host name
+            try
 			{
 				var addresses = Dns.GetHostAddresses(ipOrHost);
 				if (addresses == null)
@@ -256,10 +254,9 @@ namespace Lidgren.Network
 		/// </summary>
 		public static bool IsLocal(NetAddress remote)
 		{
-			NetAddress mask;
-			var local = GetMyAddress(out mask);
+            var local = GetMyAddress(out var mask);
 
-			if (mask == null)
+            if (mask == null)
 				return false;
 
 			uint maskBits = BitConverter.ToUInt32(mask.GetAddressBytes(), 0);

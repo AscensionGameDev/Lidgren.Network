@@ -173,8 +173,7 @@ namespace Lidgren.Network
             if (!CheckAvailability())
                 return false;
 
-            IPAddress mask;
-            var client = NetUtility.GetMyAddress(out mask);
+            var client = NetUtility.GetMyAddress(out var mask);
             if (client == null)
                 return false;
 

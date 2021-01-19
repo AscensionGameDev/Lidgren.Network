@@ -117,10 +117,9 @@ namespace Lidgren.Network
 			// queued sends
 			while (num > 0 && m_queuedSends.Count > 0)
 			{
-				NetOutgoingMessage om;
-				if (m_queuedSends.TryDequeue(out om))
-					ExecuteSend(now, om);
-				num--;
+                if (m_queuedSends.TryDequeue(out var om))
+                    ExecuteSend(now, om);
+                num--;
 				NetException.Assert(num == GetAllowedSends());
 			}
 		}
@@ -216,9 +215,8 @@ namespace Lidgren.Network
 				// ack arrived right on time
 				NetException.Assert(seqNr == m_windowStart);
 
-				bool resetTimeout;
-				m_receivedAcks[m_windowStart] = false;
-				DestoreMessage(now, m_windowStart % m_windowSize, out resetTimeout);
+                m_receivedAcks[m_windowStart] = false;
+                DestoreMessage(now, m_windowStart % m_windowSize, out var resetTimeout);
 				m_windowStart = (m_windowStart + 1) % NetConstants.NumSequenceNumbers;
 
 				// advance window if we already have early acks
@@ -226,9 +224,8 @@ namespace Lidgren.Network
 				{
 					//m_connection.m_peer.LogDebug("Using early ack for #" + m_windowStart + "...");
 					m_receivedAcks[m_windowStart] = false;
-					bool rt;
-					DestoreMessage(now, m_windowStart % m_windowSize, out rt);
-					resetTimeout |= rt;
+                    DestoreMessage(now, m_windowStart % m_windowSize, out var rt);
+                    resetTimeout |= rt;
 
 					NetException.Assert(m_storedMessages[m_windowStart % m_windowSize].Message == null); // should already be destored
 					m_windowStart = (m_windowStart + 1) % NetConstants.NumSequenceNumbers;
