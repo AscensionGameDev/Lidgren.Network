@@ -1,21 +1,13 @@
 ﻿using NUnit.Framework;
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Lidgren.Network.Tests.Peer
 {
     [TestFixture]
     public class NetPeerShutdownTests : ServerTestFixture
     {
-        public NetPeerShutdownTests() : base()
-        {
-            
-        }
-
         [Test]
         public void TestShutdownMessage()
         {
@@ -44,9 +36,12 @@ namespace Lidgren.Network.Tests.Peer
                     )
             );
 
-            var messageShutdownReason = ServerMessages.Last();
-            Assert.AreEqual(NetIncomingMessageType.StatusChanged, messageShutdownReason.MessageType);
+            var messageShutdownReason = ServerMessages.Last(
+                message => NetIncomingMessageType.StatusChanged == message.MessageType
+                );
+            Assert.IsNotNull(messageShutdownReason);
             var status = (NetConnectionStatus)messageShutdownReason.ReadByte();
+            Assert.AreEqual(NetConnectionStatus.Disconnected, status);
             Assert.AreEqual(testString, messageShutdownReason.ReadString());
         }
 
@@ -78,9 +73,12 @@ namespace Lidgren.Network.Tests.Peer
                     )
             );
 
-            var messageShutdownReason = ServerMessages.Last();
-            Assert.AreEqual(NetIncomingMessageType.StatusChanged, messageShutdownReason.MessageType);
+            var messageShutdownReason = ServerMessages.Last(
+                message => NetIncomingMessageType.StatusChanged == message.MessageType
+                );
+            Assert.IsNotNull(messageShutdownReason);
             var status = (NetConnectionStatus)messageShutdownReason.ReadByte();
+            Assert.AreEqual(NetConnectionStatus.Disconnected, status);
             Assert.AreEqual(testString, messageShutdownReason.ReadString());
         }
 
@@ -109,9 +107,12 @@ namespace Lidgren.Network.Tests.Peer
                     )
             );
 
-            var messageShutdownReason = ServerMessages.Last();
-            Assert.AreEqual(NetIncomingMessageType.StatusChanged, messageShutdownReason.MessageType);
+            var messageShutdownReason = ServerMessages.Last(
+                message => NetIncomingMessageType.StatusChanged == message.MessageType
+                );
+            Assert.IsNotNull(messageShutdownReason);
             var status = (NetConnectionStatus)messageShutdownReason.ReadByte();
+            Assert.AreEqual(NetConnectionStatus.Disconnected, status);
             Assert.AreEqual("bye", messageShutdownReason.ReadString());
         }
 
@@ -140,9 +141,12 @@ namespace Lidgren.Network.Tests.Peer
                     )
             );
 
-            var messageShutdownReason = ServerMessages.Last();
-            Assert.AreEqual(NetIncomingMessageType.StatusChanged, messageShutdownReason.MessageType);
+            var messageShutdownReason = ServerMessages.Last(
+                message => NetIncomingMessageType.StatusChanged == message.MessageType
+                );
+            Assert.IsNotNull(messageShutdownReason);
             var status = (NetConnectionStatus)messageShutdownReason.ReadByte();
+            Assert.AreEqual(NetConnectionStatus.Disconnected, status);
             Assert.AreEqual("bye", messageShutdownReason.ReadString());
         }
     }
