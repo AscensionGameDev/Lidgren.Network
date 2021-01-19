@@ -8,8 +8,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      LIDGREN_VERSION: '1.7.4.${{ github.run_number }}'
-      ARTIFACT_NAME: 'Lidgren.Network.1.7.4.${{ github.run_number }}'
+      LIDGREN_VERSION: '1.8.0.${{ github.run_number }}'
+      ARTIFACT_NAME: 'Lidgren.Network.1.8.0.${{ github.run_number }}'
     outputs:
       artifact_name: '${{ env.ARTIFACT_NAME }}'
       nupkg_base_name: 'AscensionGameDev.Lidgren.Network.${{ env.LIDGREN_VERSION }}'
