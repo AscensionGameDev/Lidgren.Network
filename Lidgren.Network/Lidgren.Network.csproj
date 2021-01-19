@@ -4,7 +4,7 @@
     <PackageId>AscensionGameDev.Lidgren.Network</PackageId>
     <AssemblyName>Lidgren.Network</AssemblyName>
     <RootNamespace>Lidgren.Network</RootNamespace>
-    <VersionPrefix>1.7.3</VersionPrefix>
+    <VersionPrefix>1.8.0</VersionPrefix>
     <TargetFrameworks>net46;net461;net462;netstandard2.0;net5.0</TargetFrameworks>
     <PackageProjectUrl>https://github.com/AscensionGameDev/Lidgren.Network</PackageProjectUrl>
     <RepositoryUrl>https://github.com/AscensionGameDev/Lidgren.Network.git</RepositoryUrl>
