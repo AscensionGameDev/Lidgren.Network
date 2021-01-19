@@ -15,8 +15,7 @@ namespace Lidgren.Network.Tests.Peer
             Assert.IsNotNull(Connection);
 
             TestHelper.WaitForConnection(Connection);
-
-            Assert.NotZero(Server.ConnectionsCount);
+            TestHelper.WaitFor(() => Server.ConnectionsCount != 0);
 
             var testString = $"{nameof(TestShutdownMessage)}_{new CryptoRandom().NextUInt64()}";
             var outgoingMessage = Peer.CreateMessage();
@@ -24,7 +23,6 @@ namespace Lidgren.Network.Tests.Peer
             Peer.Shutdown(outgoingMessage);
 
             TestHelper.WaitFor(() => Server.ConnectionsCount == 0);
-
             TestHelper.HasMessage(
                 PeerMessages,
                 NetIncomingMessageType.DebugMessage,
@@ -52,8 +50,7 @@ namespace Lidgren.Network.Tests.Peer
             Assert.IsNotNull(Connection);
 
             TestHelper.WaitForConnection(Connection);
-
-            Assert.NotZero(Server.ConnectionsCount);
+            TestHelper.WaitFor(() => Server.ConnectionsCount != 0);
 
             var testString = $"{nameof(TestShutdownMessage)}_{new CryptoRandom().NextUInt64()}";
             var outgoingMessage = Peer.CreateMessage();
@@ -61,7 +58,6 @@ namespace Lidgren.Network.Tests.Peer
             Peer.Shutdown(outgoingMessage, "debugMessage");
 
             TestHelper.WaitFor(() => Server.ConnectionsCount == 0);
-
             TestHelper.HasMessage(
                 PeerMessages,
                 NetIncomingMessageType.DebugMessage,
@@ -89,13 +85,11 @@ namespace Lidgren.Network.Tests.Peer
             Assert.IsNotNull(Connection);
 
             TestHelper.WaitForConnection(Connection);
-
-            Assert.NotZero(Server.ConnectionsCount);
+            TestHelper.WaitFor(() => Server.ConnectionsCount != 0);
 
             Peer.Shutdown("bye");
 
             TestHelper.WaitFor(() => Server.ConnectionsCount == 0);
-
             TestHelper.HasMessage(
                 PeerMessages,
                 NetIncomingMessageType.DebugMessage,
@@ -123,13 +117,11 @@ namespace Lidgren.Network.Tests.Peer
             Assert.IsNotNull(Connection);
 
             TestHelper.WaitForConnection(Connection);
-
-            Assert.NotZero(Server.ConnectionsCount);
+            TestHelper.WaitFor(() => Server.ConnectionsCount != 0);
 
             Peer.Shutdown("bye", "debugMessage");
 
             TestHelper.WaitFor(() => Server.ConnectionsCount == 0);
-
             TestHelper.HasMessage(
                 PeerMessages,
                 NetIncomingMessageType.DebugMessage,
