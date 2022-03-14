@@ -178,12 +178,14 @@ namespace Lidgren.Network
 				msg.m_readPosition = 0;
 
 				return true;
-			} catch
-			{
+			}
 #if DEBUG
-				Debugger.Break();
+            catch (Exception exception) {
+                Debugger.Break();
+#else
+            catch {
 #endif
-				throw;
+                    throw;
 			}
 		}
 	}
