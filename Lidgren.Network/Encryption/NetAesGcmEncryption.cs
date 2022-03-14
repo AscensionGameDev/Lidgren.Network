@@ -1,4 +1,4 @@
-﻿#if AES_GCM
+#if AES_GCM
 
 using System;
 using System.Buffers.Binary;
@@ -51,7 +51,7 @@ namespace Lidgren.Network.Encryption
         public override bool Decrypt(NetIncomingMessage msg)
         {
             var sourceData = msg.m_data.AsSpan();
-            var data = sourceData[msg.PositionInBytes..].ToArray().AsSpan();
+            var data = sourceData[msg.PositionInBytes..(msg.PositionInBytes + msg.LengthBytes)].ToArray().AsSpan();
 
             var offset = 0;
             

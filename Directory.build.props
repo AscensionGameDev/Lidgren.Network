@@ -1,0 +1,34 @@
+<Project>
+    <PropertyGroup Label="Packaging">
+        <Description>Lidgren.Network is a networking library for .NET framework, which uses a single UDP socket to deliver a simple API for connecting a client to a server, reading and sending messages.</Description>
+        <VersionPrefix>1.8.0</VersionPrefix>
+        <VersionSuffix>$(VersionSuffix)</VersionSuffix>
+        <PackageVersion>$(VersionPrefix)$(VersionSuffix)</PackageVersion>
+        <Authors>Ascension Game Dev, lidgren</Authors>
+        <Copyright>© lidgren 2015, Ascension Game Dev 2019-2020</Copyright>
+        <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+        <Product>AscensionGameDev.Open.Nat</Product>
+        <PackageTags>Networking</PackageTags>
+        <PackageReleaseNotes></PackageReleaseNotes>
+        <PackageProjectUrl>https://github.com/AscensionGameDev/Lidgren.Network</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/AscensionGameDev/Lidgren.Network.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackOnBuild>true</PackOnBuild>
+    </PropertyGroup>
+    <PropertyGroup Label="Outputs">
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Deterministic>true</Deterministic>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    </PropertyGroup>
+    <PropertyGroup Label="Assembly Properties">
+        <AssemblyVersion>$(Version)</AssemblyVersion>
+        <FileVersion>$(Version)</FileVersion>
+        <NeutralLanguage>en-US</NeutralLanguage>
+    </PropertyGroup>
+    <PropertyGroup Label="Defines" Condition="'$(TargetFramework)' == 'net6.0'">
+        <DefineConstants>$(DefineConstants);AES_GCM</DefineConstants>
+    </PropertyGroup>
+</Project>

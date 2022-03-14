@@ -1,10 +1,11 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using System;
 using static Lidgren.Network.Tests.TestHelper;
 
 namespace Lidgren.Network.Tests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class EncryptionTests : PeerTestFixture
     {
         [TestCase(typeof(NetXorEncryption), "TopSecret")]

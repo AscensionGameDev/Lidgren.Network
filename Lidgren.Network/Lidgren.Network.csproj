@@ -1,40 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <PackageId>AscensionGameDev.Lidgren.Network</PackageId>
+        <AssemblyName>Lidgren.Network</AssemblyName>
+        <RootNamespace>Lidgren.Network</RootNamespace>
+        <TargetFrameworks>net6.0</TargetFrameworks>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <LangVersion>latestMajor</LangVersion>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <PackageId>AscensionGameDev.Lidgren.Network</PackageId>
-    <AssemblyName>Lidgren.Network</AssemblyName>
-    <RootNamespace>Lidgren.Network</RootNamespace>
-    <VersionPrefix>1.8.0</VersionPrefix>
-    <TargetFrameworks>net46;net461;net462;netstandard2.0;net5.0</TargetFrameworks>
-    <PackageProjectUrl>https://github.com/AscensionGameDev/Lidgren.Network</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/AscensionGameDev/Lidgren.Network.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <Authors>Ascension Game Dev, lidgren</Authors>
-    <Copyright>© lidgren 2015, Ascension Game Dev 2019-2020</Copyright>
-    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-    <Description>Lidgren.Network is a networking library for .NET framework, which uses a single UDP socket to deliver a simple API for connecting a client to a server, reading and sending messages.</Description>
-    <AssemblyVersion>$(Version)</AssemblyVersion>
-    <FileVersion>$(Version)</FileVersion>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Deterministic>true</Deterministic>
-    <NeutralLanguage>en-US</NeutralLanguage>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net5.0'">
-    <DefineConstants>$(DefineConstants);AES_GCM</DefineConstants>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="../LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
-  </ItemGroup>
-
+    <ItemGroup>
+        <None Include="../LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
+    </ItemGroup>
 </Project>

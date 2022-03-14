@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 #if DEBUG
 using System.Diagnostics;
@@ -157,9 +157,18 @@ namespace Lidgren.Network
 
 				var byteLen = NetUtility.BytesToHoldBits(plaintextBits);
 				var result = m_peer.GetStorage(byteLen << 3);
-				var bytesRead = cs.Read(result, 0, byteLen);
 
-				cs.Close();
+                var read = 0;
+                while (read < byteLen)
+                {
+                    var cRead = cs.Read(result, read, byteLen - read);
+                    if (cRead == 0)
+                        return false;
+
+                    read += cRead;
+                }
+
+                cs.Close();
 
 				// Recycle existing data buffer
 				m_peer.Recycle(msg.m_data);
