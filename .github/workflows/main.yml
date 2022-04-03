@@ -8,8 +8,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      LIDGREN_VERSION: '1.8.0.${{ github.run_number }}'
-      ARTIFACT_NAME: 'Lidgren.Network.1.8.0.${{ github.run_number }}'
+      LIDGREN_VERSION: '2.0.0.${{ github.run_number }}-beta'
+      ARTIFACT_NAME: 'Lidgren.Network.2.0.0.${{ github.run_number }}-beta'
     outputs:
       artifact_name: '${{ env.ARTIFACT_NAME }}'
       nupkg_base_name: 'AscensionGameDev.Lidgren.Network.${{ env.LIDGREN_VERSION }}'
@@ -23,10 +23,10 @@ jobs:
       run: dotnet restore
     - id: build_debug
       name: Build (Debug)
-      run: dotnet build --no-restore --configuration Debug -p:VersionPrefix=$LIDGREN_VERSION --version-suffix debug
+      run: dotnet build --no-restore --configuration Debug -p:VersionPrefix=$LIDGREN_VERSION --version-suffix beta-debug
     - id: build_release
       name: Build (Release)
-      run: dotnet build --no-restore --configuration Release -p:VersionPrefix=$LIDGREN_VERSION
+      run: dotnet build --no-restore --configuration Release -p:VersionPrefix=$LIDGREN_VERSION --version-suffix beta
     - name: Upload build artifacts
       uses: actions/upload-artifact@v2.2.1
       with:

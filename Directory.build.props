@@ -1,9 +1,8 @@
 <Project>
     <PropertyGroup Label="Packaging">
         <Description>Lidgren.Network is a networking library for .NET framework, which uses a single UDP socket to deliver a simple API for connecting a client to a server, reading and sending messages.</Description>
-        <VersionPrefix>1.8.0</VersionPrefix>
+        <VersionPrefix>2.0.0</VersionPrefix>
         <VersionSuffix>$(VersionSuffix)</VersionSuffix>
-        <PackageVersion>$(VersionPrefix)$(VersionSuffix)</PackageVersion>
         <Authors>Ascension Game Dev, lidgren</Authors>
         <Copyright>© lidgren 2015, Ascension Game Dev 2019-2020</Copyright>
         <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
