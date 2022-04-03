@@ -1,38 +1,62 @@
 #if AES_GCM
 
-using System;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Lidgren.Network.Encryption
 {
     public class NetAesGcmEncryption : NetEncryption
     {
-        public static Span<byte> GenerateKey()
+        public static void GenerateKey(out Span<byte> key) => GenerateKey(16, out key);
+
+        public static void GenerateKey(int size, out Span<byte> key)
         {
-            var key = new byte[16].AsSpan();
+            key = new byte[size].AsSpan();
             RandomNumberGenerator.Fill(key);
-            return key;
         }
 
-        public static Span<byte> DeriveKey(string source) =>
-            new Rfc2898DeriveBytes(source, 16, 1000, HashAlgorithmName.SHA512).GetBytes(16);
+        public static string DeriveKey(string source, string salt) => DeriveKey(source, salt, 16);
 
-        public static Span<byte> DeriveKey(byte[] source)
+        public static string DeriveKey(string source, string salt, int keyLength)
         {
-            var salt = new byte[16];
+            var sourceBytes = Encoding.UTF8.GetBytes(source);
+            var saltBytes = Convert.FromBase64String(salt);
+            var keyBytes = DeriveKey(sourceBytes, saltBytes, keyLength);
+            return Convert.ToBase64String(keyBytes);
+        }
+
+        public static string DeriveKey(string source, out string salt) => DeriveKey(source, 16, out salt);
+
+        public static string DeriveKey(string source, int keyLength, out string salt)
+        {
+            var sourceBytes = Encoding.UTF8.GetBytes(source);
+            var keyBytes = DeriveKey(sourceBytes, keyLength, out var saltBytes);
+            salt = Convert.ToBase64String(saltBytes);
+            return Convert.ToBase64String(keyBytes);
+        }
+
+        public static Span<byte> DeriveKey(byte[] source, byte[] salt) => DeriveKey(source, salt, 16);
+
+        public static Span<byte> DeriveKey(byte[] source, byte[] salt, int keyLength)
+        {
+            using var deriveBytes = new Rfc2898DeriveBytes(source, salt, 1000, HashAlgorithmName.SHA512);
+            var key = deriveBytes.GetBytes(keyLength);
+            return key.AsSpan();
+        }
+
+        public static Span<byte> DeriveKey(byte[] source, out byte[] salt) => DeriveKey(source, 16, out salt);
+
+        public static Span<byte> DeriveKey(byte[] source, int keyLength, out byte[] salt)
+        {
+            salt = new byte[16];
             RandomNumberGenerator.Fill(salt.AsSpan());
-            return new Rfc2898DeriveBytes(source, salt, 1000, HashAlgorithmName.SHA512).GetBytes(16);
+            return DeriveKey(source, salt, keyLength);
         }
 
         private AesGcm _aesGcm { get; set; }
 
-        public NetAesGcmEncryption(NetPeer peer)
-            : this(peer, GenerateKey())
-        {
-        }
-
-        public NetAesGcmEncryption(NetPeer peer, byte[] key) : base(peer)
+        public NetAesGcmEncryption(NetPeer peer, in byte[] key) : base(peer)
         {
             if (default != key)
             {
@@ -40,88 +64,134 @@ namespace Lidgren.Network.Encryption
             }
         }
 
-        public NetAesGcmEncryption(NetPeer peer, ReadOnlySpan<byte> key) : base(peer)
+        public NetAesGcmEncryption(NetPeer peer, in ReadOnlySpan<byte> key) : base(peer)
         {
             if (default != key)
             {
                 _aesGcm = new AesGcm(key);
             }
         }
+
+        private const int NonceSize = 12;
+        private const int TagSize = 16;
 
         public override bool Decrypt(NetIncomingMessage msg)
         {
-            var sourceData = msg.m_data.AsSpan();
-            var data = sourceData[msg.PositionInBytes..(msg.PositionInBytes + msg.LengthBytes)].ToArray().AsSpan();
+            try
+            {
+                var ciphertextOffset = 0;// msg.PositionInBytes;
+                var remaining = msg.LengthBytes - ciphertextOffset;
 
-            var offset = 0;
-            
-            var bitLength = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, sizeof(int)));
-            offset += sizeof(int);
-            
-            var nonceLength = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, sizeof(int)));
-            offset += sizeof(int);
-            
-            var tagLength = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, sizeof(int)));
-            offset += sizeof(int);
+                if (remaining < (sizeof(int) * 3))
+                {
+                    return false;
+                }
 
-            var nonce = data.Slice(offset, nonceLength);
-            offset += nonceLength;
+                var cipherData = msg.m_data.AsSpan()[ciphertextOffset..];
 
-            var tag = data.Slice(offset, tagLength);
-            offset += tagLength;
+                var offset = 0;
 
-            var ciphertext = data[offset..];
+                var bitLength = BinaryPrimitives.ReadInt32LittleEndian(cipherData.Slice(offset, sizeof(int)));
+                offset += sizeof(int);
 
-            var plaintext = sourceData.Slice(msg.PositionInBytes, ciphertext.Length);
-            sourceData[(msg.PositionInBytes + ciphertext.Length)..].Fill(0);
+                var nonceLength = cipherData.Slice(offset, sizeof(int))[0];
+                offset += sizeof(byte);
 
-            _aesGcm.Decrypt(nonce, ciphertext, tag, plaintext, null);
+                var tagLength = cipherData.Slice(offset, sizeof(byte))[0];
+                offset += sizeof(byte);
 
-            msg.m_bitLength = bitLength;
-            msg.m_readPosition = 0;
+                var nonce = cipherData.Slice(offset, nonceLength);
+                offset += nonceLength;
 
-            return true;
+                var ciphertextLength = (bitLength + 7) >> 3;
+                var ciphertext = cipherData.Slice(offset, ciphertextLength);
+                offset += ciphertextLength;
+
+                var tag = cipherData.Slice(offset, tagLength);
+                offset += tagLength;
+
+                byte[]? fromPool = default;
+                var plaintext = (ciphertextLength > 1024 ? (fromPool = m_peer.GetStorage(ciphertextLength)) : stackalloc byte[ciphertextLength])[0..ciphertextLength];
+
+                _aesGcm.Decrypt(nonce, ciphertext, tag, plaintext, null);
+
+                plaintext.CopyTo(cipherData);
+                cipherData[plaintext.Length..offset].Fill(0);
+
+                if (fromPool != default)
+                {
+                    m_peer.Recycle(fromPool);
+                }
+
+                msg.m_bitLength = bitLength;
+
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
         }
-        
+
         public override bool Encrypt(NetOutgoingMessage msg)
         {
-            var plaintext = msg.m_data.AsSpan()[msg.PositionInBytes..];
-            
-            var nonceLength = AesGcm.NonceByteSizes.MaxSize;
-            var tagLength = AesGcm.TagByteSizes.MaxSize;
-            var cipherLength = plaintext.Length;
-            var dataBuffer = new byte[sizeof(int) * 3 + nonceLength + tagLength + cipherLength];
-            var data = dataBuffer.AsSpan();
+            try
+            {
+                var plaintextOffset = 0;//msg.PositionInBytes
+                var plaintextLength = msg.LengthBytes - plaintextOffset;
 
-            var offset = 0;
-            
-            BinaryPrimitives.WriteInt32LittleEndian(data.Slice(offset, sizeof(int)), msg.m_bitLength);
-            offset += sizeof(int);
+                if (plaintextLength < 1)
+                {
+                    return true;
+                }
 
-            BinaryPrimitives.WriteInt32LittleEndian(data.Slice(offset, sizeof(int)), nonceLength);
-            offset += sizeof(int);
-            
-            BinaryPrimitives.WriteInt32LittleEndian(data.Slice(offset, sizeof(int)), tagLength);
-            offset += sizeof(int);
+                var plaintext = msg.m_data.AsSpan()[plaintextOffset..msg.LengthBytes];
+                var headerLength = sizeof(int) * 3;
+                var cipherLength = headerLength + NonceSize + TagSize + plaintextLength;
 
-            var nonce = data.Slice(offset, nonceLength);
-            offset += nonceLength;
+                byte[]? fromPool = default;
+                var data = (cipherLength > 1024 ? (fromPool = m_peer.GetStorage(cipherLength)) : stackalloc byte[cipherLength])[0..cipherLength];
 
-            var tag = data.Slice(offset, tagLength);
-            offset += tagLength;
+                var offset = 0;
 
-            var ciphertext = data[offset..];
+                BinaryPrimitives.WriteInt32LittleEndian(data.Slice(offset, sizeof(int)), msg.m_bitLength);// - msg.m_readPosition);
+                offset += sizeof(int);
 
-            RandomNumberGenerator.Fill(nonce);
+                data.Slice(offset, sizeof(byte))[0] = (byte)(NonceSize & 0xff);
+                offset += sizeof(byte);
 
-            _aesGcm.Encrypt(nonce, plaintext, ciphertext, tag, null);
+                data.Slice(offset, sizeof(byte))[0] = (byte)(TagSize & 0xff);
+                offset += sizeof(byte);
 
-            m_peer.Recycle(msg.m_data);
-            msg.m_data = dataBuffer;
-            msg.m_bitLength = dataBuffer.Length << 3;
-            msg.m_readPosition = msg.m_bitLength;
+                var nonce = data.Slice(offset, NonceSize);
+                offset += NonceSize;
 
-            return true;
+                var ciphertext = data[offset..(offset + plaintextLength)];
+                offset += ciphertext.Length;
+
+                var tag = data.Slice(offset, TagSize);
+
+                RandomNumberGenerator.Fill(nonce);
+
+                _aesGcm.Encrypt(nonce, plaintext, ciphertext, tag, null);
+
+                m_peer.Recycle(msg.m_data);
+                byte[]? newBuffer = fromPool;
+                if (newBuffer == default)
+                {
+                    newBuffer = m_peer.GetStorage(data.Length);
+                    data.CopyTo(newBuffer.AsSpan());
+                }
+                msg.m_data = newBuffer;
+                msg.m_bitLength = data.Length << 3;
+                msg.m_readPosition = msg.m_bitLength;
+
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
         }
 
         public override void SetKey(byte[] data, int offset, int count) =>
