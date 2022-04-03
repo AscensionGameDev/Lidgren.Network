@@ -31,7 +31,7 @@ jobs:
       uses: actions/upload-artifact@v2.2.1
       with:
         name: '${{ env.ARTIFACT_NAME }}'
-        path: Lidgren.Network/bin/*/*.*nupkg
+        path: 'Lidgren.Network/bin/*/*.*nupkg'
         if-no-files-found: error
         retention-days: 1
   test:
