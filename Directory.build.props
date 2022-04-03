@@ -28,7 +28,7 @@
         <FileVersion>$(Version)</FileVersion>
         <NeutralLanguage>en-US</NeutralLanguage>
     </PropertyGroup>
-    <PropertyGroup Label="Defines" Condition="'$(TargetFramework)' == 'net6.0'">
+    <PropertyGroup Label="Defines" Condition="'$(TargetFramework)' == 'net6.0' OR '$(TargetFramework)' == 'net5.0' OR '$(TargetFramework)' == 'netstandard2.1'">
         <DefineConstants>$(DefineConstants);AES_GCM</DefineConstants>
     </PropertyGroup>
 </Project>

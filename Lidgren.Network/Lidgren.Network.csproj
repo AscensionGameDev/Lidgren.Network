@@ -3,7 +3,7 @@
         <PackageId>AscensionGameDev.Lidgren.Network</PackageId>
         <AssemblyName>Lidgren.Network</AssemblyName>
         <RootNamespace>Lidgren.Network</RootNamespace>
-        <TargetFrameworks>net6.0</TargetFrameworks>
+        <TargetFrameworks>netstandard2.1</TargetFrameworks>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>latestMajor</LangVersion>
