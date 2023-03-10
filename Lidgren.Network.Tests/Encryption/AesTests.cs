@@ -69,7 +69,7 @@ namespace Lidgren.Network.Tests.Encryption
                 ForceNewTransform = forceNewTransform
             };
 
-            while (length++ < LoremIpsum.Length)
+            while (++length < LoremIpsum.Length)
             {
                 var substring = LoremIpsum.Substring(0, length);
                 var outMessage = Peer.CreateMessage();

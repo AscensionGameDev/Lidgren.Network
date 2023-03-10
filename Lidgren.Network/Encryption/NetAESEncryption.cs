@@ -1,4 +1,6 @@
 using System;
+using System.Reflection;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 
 namespace Lidgren.Network
@@ -8,8 +10,14 @@ namespace Lidgren.Network
 
         static NetAESEncryption()
         {
-#if !UNITY && NET46
-			AppContext.SetSwitch("Switch.System.Security.Cryptography.AesCryptoServiceProvider.DontCorrectlyResetDecryptor", false);
+#if !UNITY
+            var frameworkName = Assembly.GetEntryAssembly()
+                ?.GetCustomAttribute<TargetFrameworkAttribute>()
+                ?.FrameworkName;
+            if (frameworkName?.Contains("v4.6.2") ?? false)
+            {
+                AppContext.SetSwitch("Switch.System.Security.Cryptography.AesCryptoServiceProvider.DontCorrectlyResetDecryptor", false);
+            }
 #endif
         }
 

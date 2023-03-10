@@ -1,15 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <PackageId>AscensionGameDev.Lidgren.Network</PackageId>
-        <AssemblyName>Lidgren.Network</AssemblyName>
-        <RootNamespace>Lidgren.Network</RootNamespace>
-        <TargetFrameworks>netstandard2.1</TargetFrameworks>
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <LangVersion>latestMajor</LangVersion>
-    </PropertyGroup>
+  <PropertyGroup>
+    <PackageId>AscensionGameDev.Lidgren.Network</PackageId>
+    <AssemblyName>Lidgren.Network</AssemblyName>
+    <RootNamespace>Lidgren.Network</RootNamespace>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <!-- <Nullable>enable</Nullable> -->
+    <!-- <ImplicitUsings>enable</ImplicitUsings> -->
+    <!-- <LangVersion>latestMajor</LangVersion> -->
+    <Configurations>Debug;Release</Configurations>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <None Include="../LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
-    </ItemGroup>
+  <ItemGroup>
+    <None Include="../LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
+  </ItemGroup>
 </Project>

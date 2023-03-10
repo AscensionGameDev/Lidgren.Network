@@ -878,14 +878,14 @@ namespace Lidgren.Network
             return biggies;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals(object obj)
         {
             if (obj == this)
             {
                 return true;
             }
 
-            if (obj is not NetBigInteger bigInteger)
+            if (!(obj is NetBigInteger bigInteger))
             {
                 return false;
             }
