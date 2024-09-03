@@ -46,7 +46,7 @@ jobs:
     needs: [build, test]
     steps:
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: '${{ needs.build.outputs.artifact_name }}'
       - name: Publish Debug nupkg
